@@ -32,7 +32,7 @@ forthcoming. For now, here are the things:
   in the notebook better soon.
 
 ### General TODO
-*
+* Determine what doc building method/format to use, and use it!
 
 ### Notes
 * Tested against Confluence 5.9.6

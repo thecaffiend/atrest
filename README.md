@@ -35,9 +35,85 @@ forthcoming. For now, here are the things:
 * Determine what doc building method/format to use, and use it!
 
 ### Notes
+#### AtREST
 * Tested against Confluence 5.9.6
 * Test the REST API is available with:
   `curl -u username [BASE_URL]/rest/api/content` where BASE_URL is something
   like: `https://[ATLASSIAN_SERVER]/confluence`. You'll be prompted for a
   password for user `username`. The response should be a bunch of content (
   pages and such).
+
+#### Confluence API
+* Expandable properties: Calls to the Confluence REST API (by any method) often
+  allow for the use of [expansion of properties to return](https://developer.atlassian.com/confdev/confluence-rest-api/expansions-in-the-rest-api).
+  For copying, creating and otherwise manipulating content, these are a
+  necessity. Below are some notes on expandable properties (starting at the
+  level of a response containing a content object). Note that when specifying
+  them in the query, don't include the preceeding `content.`. This is for
+  context and will not give expected results. The property is fillowed by a
+  list of available expansion properties (kept in the `_expandable` object of
+  a parent object).
+ * content: 'ancestors', 'body', 'children', 'container', 'descendants',
+            'history', 'metadata', 'operations', 'space', 'version'
+ * content.ancestors: ancestors are more content objects, so they have
+                      the same as content
+ * content.body: 'anonymous_export_view', 'editor', 'export_view',
+                 'styled_view', 'storage', 'view'
+ * content.body.anonymous_export_view: XHTML for a page (somehow
+                                       different from export_view...
+                                       more research)
+ * content.body.editor: XHTML for the editor for the content. perhaps
+                        more useful stuff too...more research
+ * content.body.export_view: XHTML for a page (somehow different from
+                             anonymous_export_view...more research)
+ * content.body.styled_view: XHTML for a page (including css, images,
+                             and maybe more)...more research
+ * content.body.storage: XHTML for a page, needed for POST operations
+                         I think...more research
+ * content.body.view: Same as body, but this may be needed for copying
+                      the content elsewhere.
+ * content.children: 'attachment', 'comment', 'page'
+ * content.children.attachment: attachments are more content objects,
+                                so they have the same as content. but
+                                the `_links` for the attachment holds
+                                the download link and extensions,
+                                metadata, and title have useful values
+                                as well (extensions have comments
+                                about the attachment, e.g.)
+ * content.children.comment: comments are more content objects, so
+                             they have the same as content. but they
+                             also have extensions that contain things
+                             like resolutions to the comment
+ * content.children.page: Need to find an example page value for a
+                          comment to determine what it means
+ * content.container: 'description', 'homepage', 'icon' - All appear to be
+                      related to the space the content resides in
+ * content.container.description: 'plain', 'view'
+ * content.container.description.plain: Not sure about the values
+                                        (representation and value)
+ * content.container.description.view: Not sure about the values
+                                       (representation and value)
+ * content.container.homepage: another page type, so same as content. seems to
+                               refer to the main page for the space
+ * content.container.icon: info about the space icon
+ * content.descendants: looks to be the same as content.children. No page
+                        expandable though
+ * content.history: 'lastUpdated', 'nextVersion', 'previousVersion' - Also info
+                    about the page history
+ * content.history.lastUpdated: Info abut the last update (who, what, etc)
+ * content.history.nextVersion: Info abut the next version
+ * content.history.previousVersion: Info abut the previous version (who, what,
+                                    etc)
+ * content.metadata: 'currentuser', 'labels' - Nothing else
+ * content.metadata.currentuser: 'favorited', 'lastmodified', 'viewed' -
+                                 Nothing else
+ * content.metadata.currentuser.favourited: ???
+ * content.metadata.currentuser.lastmodified: Info about the last modifying
+                                              user and what they changed
+ * content.metadata.currentuser.viewed: Info about when the current user last
+                                        viewed the page
+ * content.metadata.labels: Need an example page with labels to research this
+ * content.operations: List of operations for the current page (perhaps that
+                       the auth user can do?)...more research
+ * content.space: Same as content.container above
+ * content.version: Info about the current version of the page.

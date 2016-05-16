@@ -2,3 +2,4 @@
 *.pyc
 *.bak
 .ipynb_checkpoints/*
+tools/*.pyc

@@ -38,6 +38,7 @@ forthcoming. For now, here are the things:
     content and dry run vs real modes).
 * move TODOs in code to here that make sense
 * add atrest_cli usage section to this README
+* support other atlassian rest api's (jira, stash, etc) 
 
 ### Notes
 #### AtREST
@@ -122,3 +123,10 @@ forthcoming. For now, here are the things:
                        the auth user can do?)...more research
  * content.space: Same as content.container above
  * content.version: Info about the current version of the page.
+
+### References
+* Atlassian [REST API docs](https://developer.atlassian.com/docs/atlassian-platform-common-components/rest-api-development)
+* Confluence REST API package
+    [pushrodtechnology's PythonConfluenceAPI](https://github.com/pushrodtechnology/PythonConfluenceAPI)
+* Some concepts for page copying based on
+    [grundic's confluence-page-copier](https://github.com/grundic/confluence-page-copier)

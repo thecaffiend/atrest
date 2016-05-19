@@ -2,6 +2,8 @@ import logging
 
 from functools import wraps
 from enum import Enum
+from contextlib import closing
+from tempfile import TemporaryDirectory
 
 from requests import (
     HTTPError,
@@ -30,6 +32,13 @@ from PythonConfluenceAPI import (
 #       pluggable, but that don't require the ConfluenceRESTClient to be used
 #       as a singleton. Also, need to protect the __api from prying eyes since
 #       it has username/password info
+#       Look at jupyterhub (using traitlets) for configurable objects and
+#       Django (installed apps and custom management commands) for other
+#       extensibility ideas.
+# TODO: When looking at the above configurable command stuff and breaking up
+#       this package intelligently, also set up the package with components for
+#       other atlassian api's (stash, jira, etc). AtREST shouldn't just support
+#       confluence
 # TODO: decorator for checking required keys for a call (like a call that
 #       creates new content having the PythonConfluenceAPI's
 #       NEW_CONTENT_REQUIRED_KEYS defined)?
@@ -129,25 +138,22 @@ def requires_kw_vals(req_keys=None):
         return wrapper
     return decorator_wrapper
 
-def debug_log_call(wrapped_func):
+def debug_log_call(log_args=False, log_kwargs=False):
     """
     Decorator to log calls to a method/function, logging the callable and the
     arguments passed to it.
     """
-    # TODO: make these arguments to the decorator so methods can specify the
-    #       logging of arguments individually
-    log_args = False
-    log_kwargs = False
-
-    @wraps(wrapped_func)
-    def wrapper(self, *args, **kwargs):
-        logging.debug('debug_log_call: Calling %s ', wrapped_func.__name__)
-        if log_args:
-            logging.debug('\targs: %s ', args)
-        if log_kwargs:
-            logging.debug('\tkwargs: %s ', args)
-        return wrapped_func(self, *args, **kwargs)
-    return wrapper
+    def decorator_wrapper(wrapped_func):
+        @wraps(wrapped_func)
+        def wrapper(self, *args, **kwargs):
+            logging.debug('debug_log_call: Calling %s ', wrapped_func.__name__)
+            if log_args:
+                logging.debug('\targs: %s ', args)
+            if log_kwargs:
+                logging.debug('\tkwargs: %s ', kwargs)
+            return wrapped_func(self, *args, **kwargs)
+        return wrapper
+    return decorator_wrapper
 
 class ClientMode(Enum):
     """
@@ -224,7 +230,7 @@ class ConfluenceRESTClient():
         # TODO: support all the params the api's get_content method allows
         return self.__api.get_content()
 
-    @debug_log_call
+    @debug_log_call()
     def list_space_names(self, *args, **kwargs):
         """
         Returns the info about Confluence spaces available to the user set
@@ -252,7 +258,7 @@ class ConfluenceRESTClient():
         return self.__api.get_space_information(space_key=space_key)
 
     @handles_httperror
-    @debug_log_call
+    @debug_log_call()
     def content_exists(self, content_id=None, space_key=None, title=None, content_type=None, expand=None):
         """
         Checks if content exists in the specified space with the specified
@@ -306,7 +312,34 @@ class ConfluenceRESTClient():
 
         return cntnt
 
-    @debug_log_call
+    @handles_httperror
+    @debug_log_call()
+    def get_attachments_for_id(self, content_id, expand=None):
+        """
+        Get attachments for content with id content_id. At this time, all
+        attachment entries will be returned.
+
+        TODO: Add support for PythonConfluenceAPI kwargs:
+            start, limit, filename, media_type, and callback
+        """
+        kw = {'content_id': content_id, 'expand':expand}
+        attachments = [
+            attach for attach in
+                all_of(
+                    self.__api.get_content_attachments,
+                    **kw
+                )
+        ]
+
+        logging.debug(
+            'Content %s has %i attachments',
+            content_id,
+            len(attachments)
+        )
+
+        return attachments
+
+    @debug_log_call()
     def copy_content(self, src_spec, dst_spec):
         """
         Copy a content from one place to a new place. Copies an existing page
@@ -389,13 +422,11 @@ class ConfluenceRESTClient():
 
         return True
 
-    @debug_log_call
-    def _copy(self, src_spec, dst_parent_id, dst_space_key, dst_title, rename=True, rename_limit=100, overwrite=False):
+    @debug_log_call()
+    def _copy(self, src_spec, dst_parent_id, dst_space_key, dst_title, rename=True, rename_limit=100, overwrite=False, cpy_attachments=True, cpy_labels=True, cpy_comments=True):
         """
         """
         # This is recursively called.
-        # TODO: implement
-        # TODO: Support expand!
         # TODO: Do we need to return status? See if we need to do anything with
         #       it
         # TODO: make sure dry run is respected!
@@ -448,12 +479,19 @@ class ConfluenceRESTClient():
 
         dst_id = new_content['id']
 
-        # copy attachments
-        self._copy_attachments(src_content, dst_id)
-        # copy comments
-        self._copy_comments(src_content, dst_id)
-        # copy labels
-        self._copy_labels(src_content, dst_id)
+        expstr = src_spec.get('expand', None)
+
+        # copy attachments if specified
+        if cpy_attachments:
+            self._copy_attachments(src_content, dst_id, expand=expstr)
+
+        # copy comments if specified
+        if cpy_comments:
+            self._copy_comments(src_content, dst_id, expand=expstr)
+
+        # copy labels if specified
+        if cpy_labels:
+            self._copy_labels(src_content, dst_id, expand=expstr)
 
         # copy child pages recursively
         src_id = src_content['id']
@@ -466,7 +504,7 @@ class ConfluenceRESTClient():
                 new_spec = {
                     'content_id': kid['id'],
                     'content_type': kid['type'],
-                    'expand': src_spec.get('expand', None),
+                    'expand': expstr,
                 }
 
                 self._copy(
@@ -477,24 +515,114 @@ class ConfluenceRESTClient():
                 )
         return
 
-    @debug_log_call
-    def _copy_attachments(self, src_content, dst_id):
+    @debug_log_call()
+    def _copy_attachments(self, src_content, dst_id, expand=None):
         """
         Copy the attachments of a given page to the page with the given id.
-        E.g. if this is used as part of a page copy function, src_content
-        should have the attachments expanded and the copied page id would be
-        dst_id.
-        """
-        # TODO: do attachments need to be expanded, or can we just call the
-        #       API method to get children of type attachment for the source
-        #       page id? Thinking no expansion. Goes for labels and comments
-        #       too
-        # TODO: check for self.DRY_RUN_ID for dst_id
-        logging.info('_copy_attachments not yet implemented.')
-        pass
 
-    @debug_log_call
-    def _copy_comments(self, src_content, dst_id):
+        Copy will be done in a temporary directory for now.
+
+        TODO: Add support for other kwargs:
+            download_dir (configurable location for attachment downloads, needs
+            to be writable by user of atrest)
+            delete_downloads (a way to specify delete/keep downloaded files)
+        """
+        # TODO: Do we actually need to return anything here?
+        src_id = src_content.get('id', None)
+        if src_id is None:
+            logging.error('Attempted copy attachments with no id specified!')
+            return False
+
+        src_attachs = self.get_attachments_for_id(src_id, expand=expand)
+        from pprint import pprint
+        pprint('src_attachs: %s' % (src_attachs))
+
+        dst_attachs = []
+        dst_atitles = []
+
+        if self.__mode != ClientMode.dry_run:
+            # dst_id is likely DRY_RUN_ID if we are in a dry run, so the call
+            # to get by id will fail in that case. if not, try to call
+            dst_attachs = self.get_attachments_for_id(dst_id, expand=expand)
+            dst_atitles = [a['title'] for a in dst_attachs]
+
+        # TODO: if/when the ability to specify a download dir and/or keeping
+        #       of downloaded attachments, this will need to change. Using
+        #       TemporaryDirectory and with statement will remove the dir and
+        #       contents
+        # TODO: break this horrid thing up
+        with TemporaryDirectory() as tmp_dl_dir:
+            for sattach in src_attachs:
+                dl_path = None
+                if self.__mode == ClientMode.dry_run:
+                    logging.info('Dry run _copy_attachments. Faking download path')
+                    dl_path = 'FAKE_PATH'
+                else: # real run
+                    dl_path = self._download_attachment(sattach, tmp_dl_dir)
+
+                if dl_path:
+                    sattach_title = sattach.get('title', None)
+                    try:
+                        attach_idx = dst_atitles.index(sattach_title)
+                        attach_exists_msg = \
+                            'Source attachment %s exists in destination ' \
+                            'content already. Updating with downloaded ' \
+                            'version.'
+                        logging.debug(attach_exists_msg, sattach_title)
+
+                        if self.__mode == ClientMode.dry_run:
+                            logging.info('Dry run: would update existing attachment with downloaded version')
+                        else:
+                            with open(dl_path, 'rb') as dl:
+                                self.__api.update_attachment(
+                                    content_id=dst_id,
+                                    attachment_id=dst_attachs[attach_idx]['id'],
+                                    attachment={'file': dl}
+                                )
+                    except ValueError as e:
+                        # the title for the source attachment was not found in
+                        # the destination attachment titles. it means we don't
+                        # have to update an existing attachment and can just
+                        # add it to the dst
+                        logging.debug('Creating attachment %s for destination content', sattach_title)
+
+                        if self.__mode == ClientMode.dry_run:
+                            logging.info('Dry run: would add new attachment')
+                        else:
+                            with open(dl_path, 'rb') as dl:
+                                self.__api.create_new_attachment_by_content_id(
+                                    content_id=dst_id,
+                                    attachments={'file': dl}
+                                )
+        return True
+
+    @handles_httperror
+    @debug_log_call()
+    def _download_attachment(self, attach_content, dl_dir):
+        """
+        Download an attachment specified by attach_content (usually returned by
+        a call to the Confluence REST API) to the directory dl_dir.
+        """
+        # TODO: Error check args and vals below
+        dl_file_path = None
+        attach_name = attach_content.get('title', None)
+
+        logging.debug(
+            'Downloading attachment %s to dir %s',
+            attach_name,
+            dl_dir
+        )
+        dl_link = attach_contenty['_links']['download'][1:].encode('utf8')
+        dl_cntnt = self.__api._service_get_request(sub_uri=dl_link, raw=True)
+        dl_file_path = os.path.join(dl_dir, attach_name)
+        with open(dl_file_path, 'wb') as f:
+            f.write(dl_cntnt)
+        logging.debug('Download completed')
+        return dl_file_path
+
+
+    @debug_log_call()
+    def _copy_comments(self, src_content, dst_id, expand=None):
         """
         Copy the comments of a given page to the page with the given id.
         E.g. if this is used as part of a page copy function, src_content
@@ -505,8 +633,8 @@ class ConfluenceRESTClient():
         logging.info('_copy_comments not yet implemented.')
         pass
 
-    @debug_log_call
-    def _copy_labels(self, src_content, dst_id):
+    @debug_log_call()
+    def _copy_labels(self, src_content, dst_id, expand=None):
         """
         Copy the labels of a given page to the page with the given id.
         E.g. if this is used as part of a page copy function, src_content
@@ -517,7 +645,7 @@ class ConfluenceRESTClient():
         logging.info('_copy_labels not yet implemented.')
         pass
 
-    @debug_log_call
+    @debug_log_call()
     def _copy_page(self, src_content, dst_parent_id, dst_space_key, dst_title, expand=None):
         """
         Copy a page (represented by src_content) as a child of the page
@@ -564,7 +692,7 @@ class ConfluenceRESTClient():
             cpy = self.__api.create_new_content(**content_dict)
         return cpy
 
-    @debug_log_call
+    @debug_log_call()
     def _get_content_title(self, space_key, title, rename=True, rename_limit=100, overwrite=False):
         """
         See if the content name 'title' exists in the space already. If not,
@@ -633,7 +761,7 @@ class ConfluenceRESTClient():
 
 # TODO: consider separate classes for expand str building (or make a
 #       configurable member of the action classes discussed in other TODOs)...
-    @debug_log_call
+    @debug_log_call()
     def build_expand_str(self):
         """
         Returns the string of properties to expand for results fom the API.
@@ -648,7 +776,7 @@ class ConfluenceRESTClient():
     # TODO: move this methods to somewhere else? make a spec class for
     #       ConfluenceAPI calls and extend for specific operations (like
     #       get/create new content, copy src/dst, etc)?
-    @debug_log_call
+    @debug_log_call()
     def get_default_specs(self):
         """
         Gets a empty dictionaries for copy specs (to and from copying). These

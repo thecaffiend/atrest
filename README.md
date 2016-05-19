@@ -33,6 +33,11 @@ forthcoming. For now, here are the things:
 
 ### General TODO
 * Determine what doc building method/format to use, and use it!
+* Style (e.g. PEP8) checking
+* Update the atrest_cli with newly supported operations (like deep copy of
+    content and dry run vs real modes).
+* move TODOs in code to here that make sense
+* add atrest_cli usage section to this README
 
 ### Notes
 #### AtREST

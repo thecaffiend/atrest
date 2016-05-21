@@ -366,6 +366,33 @@ class ConfluenceRESTClient():
 
         return comments
 
+    @handles_httperror
+    @debug_log_call()
+    def get_labels_for_id(self, content_id):
+        """
+        Get labels for content with id content_id. At this time, all
+        label entries will be returned.
+
+        TODO: Add support for PythonConfluenceAPI kwargs:
+            prefix, start, limit, and callback
+        """
+        kw = {'content_id': content_id}
+        labels = [
+            lab for lab in
+                all_of(
+                    self.__api.get_content_labels,
+                    **kw
+                )
+        ]
+
+        logging.debug(
+            'Content %s has %i labels',
+            content_id,
+            len(labels)
+        )
+
+        return labels
+
     @debug_log_call()
     def copy_content(self, src_spec, dst_spec):
         """
@@ -712,7 +739,7 @@ class ConfluenceRESTClient():
             'type':'comment',
             'title': title,
             'space': {
-                'key': dst_space, 
+                'key': dst_space,
             },
             'container': dst_content,
          	'body': {
@@ -741,8 +768,28 @@ class ConfluenceRESTClient():
         dst_id.
         """
         # TODO: check for self.DRY_RUN_ID for dst_id
-        logging.info('_copy_labels not yet implemented.')
-        pass
+
+        # TODO: this getattr/check/log/return boilerplate is all over the
+        #       place. fix that
+        src_id = src_content.get('id', None)
+        if src_id is None:
+            logging.error('Attempted copy labels with no id specified!')
+            return False
+
+        # TODO: this is overriding the passed in kwarg expand, this should
+        #       come from outside this method
+        src_labels = self.get_labels_for_id(src_id)
+
+        label_copies = [
+            {'prefix': l['prefix'], 'name': l['name']} for l in src_labels
+        ]
+
+        # TODO: Make a property for mode
+        if self.__mode == ClientMode.dry_run:
+            logging.info('Dry run _copy_labels. Would copy: %s', label_copies)
+        else:
+            self.__api.create_new_label_by_content_id(content_id=dst_id, label_names=label_copies)
+        # TODO: need to return anything of interest? standardize returns...
 
     @debug_log_call()
     def _copy_page(self, src_content, dst_parent_id, dst_space_key, dst_title, expand=None):

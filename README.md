@@ -51,6 +51,7 @@ forthcoming. For now, here are the things:
   and configuration methods to add user defined functionality (perhaps also
   adding a base for recursive commands like deep copying that walks some node
   type and has visit methods).
+* make library pip installable and allow usage of other pip installed commands
 
 #### Planned Functional Additions
 ##### Confluence

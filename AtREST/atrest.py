@@ -1,9 +1,12 @@
 import logging
+import os
+import os.path
 
 from functools import wraps
 from enum import Enum
 from contextlib import closing
 from tempfile import TemporaryDirectory
+
 
 from requests import (
     HTTPError,
@@ -664,7 +667,9 @@ class ConfluenceRESTClient():
             attach_name,
             dl_dir
         )
-        dl_link = attach_contenty['_links']['download'][1:].encode('utf8')
+
+        # get the download link minus the preceeding '/'
+        dl_link = attach_content['_links']['download'][1:]
         dl_cntnt = self.__api._service_get_request(sub_uri=dl_link, raw=True)
         dl_file_path = os.path.join(dl_dir, attach_name)
         with open(dl_file_path, 'wb') as f:
@@ -783,6 +788,10 @@ class ConfluenceRESTClient():
         label_copies = [
             {'prefix': l['prefix'], 'name': l['name']} for l in src_labels
         ]
+
+        if not len(label_copies):
+            # no labels, no copy.
+            return
 
         # TODO: Make a property for mode
         if self.__mode == ClientMode.dry_run:

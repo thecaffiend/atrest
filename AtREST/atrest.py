@@ -339,6 +339,33 @@ class ConfluenceRESTClient():
 
         return attachments
 
+    @handles_httperror
+    @debug_log_call()
+    def get_comments_for_id(self, content_id, expand=None):
+        """
+        Get comments for content with id content_id. At this time, all
+        comment entries will be returned.
+
+        TODO: Add support for PythonConfluenceAPI kwargs:
+            parent_version, start, limit, location, depth, and callback
+        """
+        kw = {'content_id': content_id, 'expand':expand}
+        comments = [
+            cmt for cmt in
+                all_of(
+                    self.__api.get_content_comments,
+                    **kw
+                )
+        ]
+
+        logging.debug(
+            'Content %s has %i comments',
+            content_id,
+            len(comments)
+        )
+
+        return comments
+
     @debug_log_call()
     def copy_content(self, src_spec, dst_spec):
         """
@@ -534,8 +561,6 @@ class ConfluenceRESTClient():
             return False
 
         src_attachs = self.get_attachments_for_id(src_id, expand=expand)
-        from pprint import pprint
-        pprint('src_attachs: %s' % (src_attachs))
 
         dst_attachs = []
         dst_atitles = []
@@ -629,9 +654,83 @@ class ConfluenceRESTClient():
         should have the comments expanded and the copied page id would be
         dst_id.
         """
-        # TODO: check for self.DRY_RUN_ID for dst_id
-        logging.info('_copy_comments not yet implemented.')
-        pass
+        # TODO: this getattr/check/log/return boilerplate is all over the
+        #       place. fix that
+        src_id = src_content.get('id', None)
+        if src_id is None:
+            logging.error('Attempted copy comments with no id specified!')
+            return False
+
+        # TODO: this is overriding the passed in kwarg expand, this should
+        #       come from outside this method
+        expstr = 'container,body.storage'
+        src_comments = self.get_comments_for_id(src_id, expand=expstr)
+
+        # TODO: watch for dry run id
+        # TODO: need expand here?
+        for cmnt in src_comments:
+            # TODO: log c or something?
+            c = self.create_new_comment_for_content_id(
+                dst_id,
+                cmnt['title'],
+                cmnt['body']['storage']['value']
+            )
+        return True
+
+    @debug_log_call()
+    def create_new_comment_for_content_id(self, dst_id, title, comment_val):
+        """
+        Add a new comment to the content with id dst_id. The comment will have
+        the title and value given.
+
+        NOTE: The comment_val value should be an HTML snippet in <p> tags.
+
+        NOTE: This will not add comments to attachments, or anything else that
+              stores comments in the metadata field as opposed to storing them
+              as child types.
+        """
+        # TODO: make work with non-HTML formatted strings. seems to work ok
+        #       with plain text values, but not sure the implications
+        # TODO: add mechanism to add comments to oddballs like attachments
+        # TODO: real close to how copy page works. refactor that...
+
+        # TODO: what is the bare minimum of the dst_content that's required for
+        #       a comment's container?
+        dst_content = {}
+        dst_space = None
+        if self.__mode == ClientMode.real_run:
+            dst_content = self.content_exists(content_id=dst_id)
+
+            # TODO: getting the space name here is needed because the __api call
+            #       for create_new_content requires it. fork that repo and add a
+            #       method to make a new comment for content id and remove it from
+            #       the content_dict below
+            dst_space = dst_content['space']['key']
+
+        new_cmnt = {}
+        content_dict = {
+            'type':'comment',
+            'title': title,
+            'space': {
+                'key': dst_space, 
+            },
+            'container': dst_content,
+         	'body': {
+                'storage': {
+                    'value': comment_val,
+                    'representation': 'storage'
+                },
+            },
+        }
+
+        if self.__mode == ClientMode.dry_run:
+            new_cmnt = content_dict.copy()
+            new_cmnt.update({'id': DRY_RUN_ID})
+            logging.info('Dry run create_new_comment_for_content_id. Returning fake new comment %s', new_cmnt)
+        else:
+            new_cmnt = self.__api.create_new_content(content_dict)
+        return new_cmnt
+
 
     @debug_log_call()
     def _copy_labels(self, src_content, dst_id, expand=None):
@@ -689,7 +788,7 @@ class ConfluenceRESTClient():
             cpy = content_dict.copy()
             cpy.update({'id': DRY_RUN_ID})
         else:
-            cpy = self.__api.create_new_content(**content_dict)
+            cpy = self.__api.create_new_content(content_dict)
         return cpy
 
     @debug_log_call()

@@ -38,7 +38,29 @@ forthcoming. For now, here are the things:
     content and dry run vs real modes).
 * move TODOs in code to here that make sense
 * add atrest_cli usage section to this README
-* support other atlassian rest api's (jira, stash, etc) 
+* support other atlassian rest api's (jira, stash, etc)
+* support maintaining history of copied items (like pages, attachments, etc).
+  this is not yet implemented in the real Confluence REST API (should be at
+  /rest/api/content/{id}/version).
+* support comments on copy attachments
+* support CQL advanced search
+
+#### Planned Functional Additions
+##### Confluence
+* Create space
+* Copy space
+* Archive space
+* more...
+
+##### JIRA (not yet supported)
+* Nothing to see here...yet
+
+##### Stash (not yet supported)
+* Nothing to see here...yet
+
+##### Other (not yet supported)
+* Nothing to see here...yet
+
 
 ### Notes
 #### AtREST

@@ -32,7 +32,7 @@ forthcoming. For now, here are the things:
   in the notebook better soon.
 
 ### General TODO
-* Determine what doc building method/format to use, and use it!
+* Sphinx documentationify!
 * Style (e.g. PEP8) checking
 * Update the atrest_cli with newly supported operations (like deep copy of
     content and dry run vs real modes).
@@ -41,9 +41,16 @@ forthcoming. For now, here are the things:
 * support other atlassian rest api's (jira, stash, etc)
 * support maintaining history of copied items (like pages, attachments, etc).
   this is not yet implemented in the real Confluence REST API (should be at
-  /rest/api/content/{id}/version).
-* support comments on copy attachments
+  `/rest/api/content/{id}/version)`.
+* support comments on copy attachments (kept in metadata field of the
+  attachment instead of as a child type like for pages)
 * support CQL advanced search
+* move to traitlets style configurable application (with subcommands) and
+  configurable classes
+* look at class hierarchy for bases/standard functionality, allow subclassing
+  and configuration methods to add user defined functionality (perhaps also
+  adding a base for recursive commands like deep copying that walks some node
+  type and has visit methods).
 
 #### Planned Functional Additions
 ##### Confluence

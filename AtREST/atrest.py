@@ -473,8 +473,8 @@ class ConfluenceRESTClient():
             dst_spec['space_key'],
             dst_spec['content_copy']['title'],
             rename=dst_spec['content_copy']['rename'],
-            rename_limit=dst_spec['content_copy']['rename'],
-            overwrite=dst_spec['content_copy']['rename'],
+            rename_limit=dst_spec['content_copy']['rename_limit'],
+            overwrite=dst_spec['content_copy']['overwrite'],
         )
 
         return True
@@ -886,8 +886,8 @@ class ConfluenceRESTClient():
                     rename_title = '%s %i' % (tmp_title, cntr)
                     logging.debug(
                         'Checking for new title [%s] in destination space [%s]',
-                        space_key,
                         rename_title,
+                        space_key,
                     )
                     new_content = self.content_exists(
                         space_key=space_key,

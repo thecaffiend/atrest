@@ -17,6 +17,8 @@ from AtREST.atrest import (
 #       of operation (all operations should be runnable as sub commands of the
 #       main application if possible)
 # TODO: change prints to logs where/if it makes sense
+# TODO: Methods for setting context (current source/dest space/page/etc) rather
+#       than specifying per command
 
 class AtRESTCli():
     """

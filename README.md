@@ -77,6 +77,8 @@ _NOTE_: This is not up to date. Use CLI until it is.
  * Copy space
  * Archive space
  * Copy content without recursing
+ * Update content (e.g. add entry to table). Allow templates for update
+   formatting (e.g. like a table snippit to be used to add a row)
  * Content find and replace
  * more...
 

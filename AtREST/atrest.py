@@ -18,14 +18,6 @@ from PythonConfluenceAPI import (
 )
 
 # TODO: meta TODO, move TODOs to README if possible
-# TODO: security on password. even if getpass is used to get the password (so
-#       it isn't echoed when entered), when used to initialize the REST API,
-#       it is stored in that object (and is accessible in plain text via
-#       APIManager.__api.password). This could theoretically cause problems in
-#       a notebook or other interactive environment where objects are
-#       inspectable when running. Additionally, the interface uses
-#       HTTPBasicAuth (in requests library), so if not used over https,
-#       everything is sent in plaintext over the wire...
 # TODO: provide a set of supported operations (check content existence, copy
 #       content, etc), and a mechanism to add extension operations for users.
 #       these should either be composed of supported operations (with some kind
@@ -42,9 +34,6 @@ from PythonConfluenceAPI import (
 #       this package intelligently, also set up the package with components for
 #       other atlassian api's (stash, jira, etc). AtREST shouldn't just support
 #       confluence
-# TODO: decorator for checking required keys for a call (like a call that
-#       creates new content having the PythonConfluenceAPI's
-#       NEW_CONTENT_REQUIRED_KEYS defined)?
 # TODO: look at neobunch package (evolution of bunchify). changes a dict to an
 #       object that can be accessed via dot notation (instead of with string
 #       keys)
@@ -54,11 +43,9 @@ from PythonConfluenceAPI import (
 #       page) so the actions can be pluggable, but that don't require the
 #       ConfluenceRESTClient to be used as a singleton. Also, need to protect
 #       the __api from prying eyes since it has username/password info
-# TODO: kwargs being abused in method definitions. move to explicit named
-#       better so you know the expected args
 # TODO: use the HTTPError handling decorator where needed (only some places
 #       right now).
-# TODO: can we configure the api to always return all (or set a pagination
+# TODO: user configure of the api to always return all (or set a pagination
 #       limit that does the same thing...)? currently, if limit is an allowed
 #       value in a query and it is not set, confluence defaults to 25. If
 #       all_of (from the PythonConfluenceAPI package) is used, it does requests

@@ -19,7 +19,12 @@ forthcoming. For now, here are the things:
   PythonConfluenceAPI. This is not the "right" way to do this, but it works so
   far
 
-### General/Notebook Usage
+### General/CLI Usage
+* To come
+
+### Notebook Usage
+_NOTE_: This is not up to date. Use CLI until it is.
+
 * Make the environment (assuming Anaconda is installed and on the path)
 `conda create --name atlassian_rest python=3 tornado jupyter notebook pep8`
 * Activate the environment
@@ -37,14 +42,8 @@ forthcoming. For now, here are the things:
 * Update the atrest_cli with newly supported operations (like deep copy of
     content and dry run vs real modes).
 * move TODOs in code to here that make sense
-* add atrest_cli usage section to this README
+* add atrest_cli usage doc to this README
 * support other atlassian rest api's (jira, stash, etc)
-* support maintaining history of copied items (like pages, attachments, etc).
-  this is not yet implemented in the real Confluence REST API (should be at
-  `/rest/api/content/{id}/version)`.
-* support comments on copy attachments (kept in metadata field of the
-  attachment instead of as a child type like for pages)
-* support CQL advanced search
 * move to traitlets style configurable application (with subcommands) and
   configurable classes
 * look at class hierarchy for bases/standard functionality, allow subclassing
@@ -53,12 +52,33 @@ forthcoming. For now, here are the things:
   type and has visit methods).
 * make library pip installable and allow usage of other pip installed commands
 
-#### Planned Functional Additions
+#### API TODOs / Planned Functional Additions
 ##### Confluence
-* Create space
-* Copy space
-* Archive space
-* more...
+* TODOs
+ * get the expand strings handled better (configurable, different per content
+   type, etc)
+ * security on user password. even if getpass is used to get the password (so
+   it isn't echoed when entered), when used to initialize the REST API,
+   it is stored in that object (and is accessible in plain text via
+   `RESTClient.__api.password`). This could theoretically cause problems in
+   a notebook or other interactive environment where objects are inspectable
+   when running. Additionally, the interface uses HTTPBasicAuth (in requests
+   library), so if not used over https, everything is sent in plaintext over
+   the wire...
+ * break out class/package structure
+ * support maintaining history of copied items (like pages, attachments, etc).
+   this is not yet implemented in the real Confluence REST API (should be at
+   `/rest/api/content/{id}/version)`.
+ * support comments on copy attachments (kept in metadata field of the
+   attachment instead of as a child type like for pages)
+ * support CQL advanced search
+* Operations to support
+ * Create space
+ * Copy space
+ * Archive space
+ * Copy content without recursing
+ * Content find and replace
+ * more...
 
 ##### JIRA (not yet supported)
 * Nothing to see here...yet

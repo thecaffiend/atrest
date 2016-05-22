@@ -18,39 +18,12 @@ from PythonConfluenceAPI import (
 )
 
 # TODO: meta TODO, move TODOs to README if possible
-# TODO: provide a set of supported operations (check content existence, copy
-#       content, etc), and a mechanism to add extension operations for users.
-#       these should either be composed of supported operations (with some kind
-#       of DSL to compose), or via a user plugin/script that extends some kind
-#       of ExtensionOperationBase class. Experiment. look at design patterns
-#       for allowing classes for actions (like copy page) so the actions can be
-#       pluggable, but that don't require the ConfluenceRESTClient to be used
-#       as a singleton. Also, need to protect the __api from prying eyes since
-#       it has username/password info
-#       Look at jupyterhub (using traitlets) for configurable objects and
-#       Django (installed apps and custom management commands) for other
-#       extensibility ideas.
-# TODO: When looking at the above configurable command stuff and breaking up
-#       this package intelligently, also set up the package with components for
-#       other atlassian api's (stash, jira, etc). AtREST shouldn't just support
-#       confluence
 # TODO: look at neobunch package (evolution of bunchify). changes a dict to an
 #       object that can be accessed via dot notation (instead of with string
 #       keys)
-# TODO: Make client configurable from config file
 # TODO: This is getting unrully. Start breaking up file.
-# TODO: look at design patterns for allowing classes for actions (like copy
-#       page) so the actions can be pluggable, but that don't require the
-#       ConfluenceRESTClient to be used as a singleton. Also, need to protect
-#       the __api from prying eyes since it has username/password info
 # TODO: use the HTTPError handling decorator where needed (only some places
 #       right now).
-# TODO: user configure of the api to always return all (or set a pagination
-#       limit that does the same thing...)? currently, if limit is an allowed
-#       value in a query and it is not set, confluence defaults to 25. If
-#       all_of (from the PythonConfluenceAPI package) is used, it does requests
-#       (using the default limit per query if not set), which means a bunch
-#       of requests potentially.
 
 
 # TODO: move this to init of ConfluenceRESTClient?

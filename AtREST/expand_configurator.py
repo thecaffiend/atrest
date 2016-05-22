@@ -1,4 +1,5 @@
-
+# TODO: consider removing this if traitlets config and refactor of package
+#       makes this unnecessary
 class ExpandConfigurator():
     """
     """

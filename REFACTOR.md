@@ -1,5 +1,32 @@
 # Refactoring AtREST
 
+## LEFTOFF
+* Client base class implemented, and confluence client has been refactored.
+ * Testing needed
+ * consider something like AtREST.core for clientbase.py and a module for
+   application base (subclass of traitlets.config.Application that provides
+   functionality for InteractiveApplication - an application that runs via a
+   cli menu or otherwise interactively).
+* confluence rest client
+ * add create_new_xxx methods (content, labels, attachments, etc)
+ * move `_get_content_title` from atrest to this. rename and make public api
+* each client should be an interactive app, and should be able to load commands
+  as subcommands (e.g. Token for jupyterhub) or as commands available through
+  it's cli.
+* make examples dir and add an example Application for SpaceLister
+* rename AtREST dir atrest (caps suck)
+* add scripts dir, and script for (at least) atrest app and atrest -i
+  (interactive) alias. python scripts that have no .py extension (again, look
+  at jupyterhub). may just rename tools for that
+* update README and other doc for updates
+* use skeleton (cookiecutter?) to make pip installable/doc skeletons
+* previous atrest.py is still around.
+ * move contents that are command specific to command classes
+ * atrest.py will become the traitlets application location when that starts
+ * remove expand_configurator.py
+* get configuration working
+* tests...
+
 ## General Notes
 * provide a set of supported operations (check content existence, copy content,
     etc), and a mechanism to add extension operations for users. these should

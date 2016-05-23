@@ -34,6 +34,7 @@ logging.basicConfig(format='%(levelname)s: %(message)s', level=logging.DEBUG)
 # content_id val to use for dry runs.
 DRY_RUN_ID = -333
 
+# MOVED to AtREST.utils.decorators
 def handles_httperror(wrapped_func):
     """
     Decorator for generic handling of HTTPErrors for methods that can throw
@@ -69,38 +70,41 @@ def handles_httperror(wrapped_func):
     return wrapper
 
 # TODO: deprecate this
-def requires_kw_vals(req_keys=None):
-    """
-    Decorator for checking if a function/method has the keys required and
-    non-None vals before calling. Example use case, keys are required for calls
-    to the PythonConfluenceAPI.
+# def requires_kw_vals(req_keys=None):
+#     """
+#     Decorator for checking if a function/method has the keys required and
+#     non-None vals before calling. Example use case, keys are required for calls
+#     to the PythonConfluenceAPI.
+#
+#     req_keys is a list or tuple of required key names.
+#     returns None if required keys aren't provided. Otherwise it returns the
+#             result of the decorated function call.
+#     """
+#     def decorator_wrapper(wrapped_func):
+#         @wraps(wrapped_func)
+#         def wrapper(self, *args, **kwargs):
+#             # TODO: set notation here (seta <= setb) is python3 only. problem?
+#             if set(req_keys) <= set(kwargs.keys()):
+#                 if(all([kwargs[k] for k in req_keys])):
+#                     return wrapped_func(self, *args, **kwargs)
+#                 else:
+#                     logging.error(
+#                         'Call to %s has at least one required value as None.',
+#                         wrapped_func
+#                     )
+#                     logging.error('\tNone value found, keys: (%s)', req_keys)
+#             else:
+#                 logging.error(
+#                     'Call to %s does not include the required kwargs.',
+#                     wrapped_func
+#                 )
+#                 logging.error('\tRequires (%s), got (%s)', req_keys, set(kwargs.keys()))
+#         return wrapper
+#     return decorator_wrapper
 
-    req_keys is a list or tuple of required key names.
-    returns None if required keys aren't provided. Otherwise it returns the
-            result of the decorated function call.
-    """
-    def decorator_wrapper(wrapped_func):
-        @wraps(wrapped_func)
-        def wrapper(self, *args, **kwargs):
-            # TODO: set notation here (seta <= setb) is python3 only. problem?
-            if set(req_keys) <= set(kwargs.keys()):
-                if(all([kwargs[k] for k in req_keys])):
-                    return wrapped_func(self, *args, **kwargs)
-                else:
-                    logging.error(
-                        'Call to %s has at least one required value as None.',
-                        wrapped_func
-                    )
-                    logging.error('\tNone value found, keys: (%s)', req_keys)
-            else:
-                logging.error(
-                    'Call to %s does not include the required kwargs.',
-                    wrapped_func
-                )
-                logging.error('\tRequires (%s), got (%s)', req_keys, set(kwargs.keys()))
-        return wrapper
-    return decorator_wrapper
-
+# MOVED to AtREST.utils.decorators
+# TODO: remove the hand holding checks for none. let exceptions propagate and
+#       throw some
 def debug_log_call(log_args=False, log_kwargs=False):
     """
     Decorator to log calls to a method/function, logging the callable and the
@@ -118,6 +122,7 @@ def debug_log_call(log_args=False, log_kwargs=False):
         return wrapper
     return decorator_wrapper
 
+# MOVED - AtREST.clientbase.py
 class ClientMode(Enum):
     """
     Enum for the mode to operate in. dry_run only logs what would happen.
@@ -126,6 +131,10 @@ class ClientMode(Enum):
     dry_run = 0
     real_run = 1
 
+# NEW BASE CLASS AtRESTClientBase - AtREST.clientbase.py
+# TODO: move everything that is command specific to somewhere else (like a
+#       command class). this class should expose methods that wrap the api
+#       object's calls, but not do things like copying
 class ConfluenceRESTClient():
     """
     Class wrapping the PythonConfluenceAPI.ConfluenceAPI. Provides methods for
@@ -139,7 +148,7 @@ class ConfluenceRESTClient():
     # TODO: see if there's a documented limit to this number for Confluence
     MAX_RESULTS = (2**16)*2
 
-    # TODO: Once tested, the mode should default to real_run.
+# MOVED
     def __init__(self, username, password, url_base, mode=ClientMode.dry_run):
         """
         Init method for class. Nothing special.
@@ -148,6 +157,7 @@ class ConfluenceRESTClient():
         self.__mode = mode
         self.__query_params = None
 
+# MOVED
     @property
     def api(self):
         """
@@ -158,11 +168,13 @@ class ConfluenceRESTClient():
         #      PASSWORDS)
         return self.__api
 
+# DEPRECATE
     @property
     def query_params(self):
         """
         Property getter for query parameters.
         """
+        # TODO: still needed or worthwhile?
         # TODO: do we want a setter?
         if self.__query_params is None:
             # TODO: add more as they are found to  be useful
@@ -171,6 +183,7 @@ class ConfluenceRESTClient():
             }
         return self.__query_params
 
+# MOVED
     @property
     def status(self):
         """
@@ -185,6 +198,7 @@ class ConfluenceRESTClient():
             status = (True, 'API Initialized!')
         return status
 
+# DEPRECATE
     def recent_content(self, *args, **kwargs):
         """
         Returns the recent Confluence content available to the user set in the
@@ -193,6 +207,7 @@ class ConfluenceRESTClient():
         # TODO: support all the params the api's get_content method allows
         return self.__api.get_content()
 
+# TODO: make this a command. should be a good test case.
     @debug_log_call()
     def list_space_names(self, *args, **kwargs):
         """
@@ -212,7 +227,8 @@ class ConfluenceRESTClient():
             all_of(self.__api.get_spaces, **self.query_params)
         ]
 
-    @requires_kw_vals(['space_key'])
+# MOVED
+#    @requires_kw_vals(['space_key'])
     @handles_httperror
     def space_exists(self, space_key=None):
         """
@@ -220,6 +236,7 @@ class ConfluenceRESTClient():
         """
         return self.__api.get_space_information(space_key=space_key)
 
+# MOVED
     @handles_httperror
     @debug_log_call()
     def content_exists(self, content_id=None, space_key=None, title=None, content_type=None, expand=None):
@@ -275,6 +292,7 @@ class ConfluenceRESTClient():
 
         return cntnt
 
+# MOVED
     @handles_httperror
     @debug_log_call()
     def get_attachments_for_id(self, content_id, expand=None):
@@ -302,6 +320,7 @@ class ConfluenceRESTClient():
 
         return attachments
 
+# MOVED
     @handles_httperror
     @debug_log_call()
     def get_comments_for_id(self, content_id, expand=None):
@@ -329,6 +348,7 @@ class ConfluenceRESTClient():
 
         return comments
 
+# MOVED
     @handles_httperror
     @debug_log_call()
     def get_labels_for_id(self, content_id):
@@ -356,6 +376,9 @@ class ConfluenceRESTClient():
 
         return labels
 
+# LEFTOFF moving code elsewhere. below is copier command stuff
+
+# TODO: move to copier command class
     @debug_log_call()
     def copy_content(self, src_spec, dst_spec):
         """
@@ -439,6 +462,7 @@ class ConfluenceRESTClient():
 
         return True
 
+    # TODO: move to copier command class
     @debug_log_call()
     def _copy(self, src_spec, dst_parent_id, dst_space_key, dst_title, rename=True, rename_limit=100, overwrite=False, cpy_attachments=True, cpy_labels=True, cpy_comments=True):
         """
@@ -532,6 +556,7 @@ class ConfluenceRESTClient():
                 )
         return
 
+    # TODO: move to copier command class
     @debug_log_call()
     def _copy_attachments(self, src_content, dst_id, expand=None):
         """
@@ -611,6 +636,7 @@ class ConfluenceRESTClient():
                                 )
         return True
 
+    # TODO: make this part of public api
     @handles_httperror
     @debug_log_call()
     def _download_attachment(self, attach_content, dl_dir):
@@ -638,6 +664,7 @@ class ConfluenceRESTClient():
         return dl_file_path
 
 
+    # TODO: move to copier command class
     @debug_log_call()
     def _copy_comments(self, src_content, dst_id, expand=None):
         """
@@ -724,6 +751,7 @@ class ConfluenceRESTClient():
         return new_cmnt
 
 
+    # TODO: move to copier command class
     @debug_log_call()
     def _copy_labels(self, src_content, dst_id, expand=None):
         """
@@ -760,6 +788,7 @@ class ConfluenceRESTClient():
             self.__api.create_new_label_by_content_id(content_id=dst_id, label_names=label_copies)
         # TODO: need to return anything of interest? standardize returns...
 
+    # TODO: move to copier command class
     @debug_log_call()
     def _copy_page(self, src_content, dst_parent_id, dst_space_key, dst_title, expand=None):
         """
@@ -807,6 +836,7 @@ class ConfluenceRESTClient():
             cpy = self.__api.create_new_content(content_dict)
         return cpy
 
+    # TODO: make part of public api
     @debug_log_call()
     def _get_content_title(self, space_key, title, rename=True, rename_limit=100, overwrite=False):
         """
@@ -888,6 +918,7 @@ class ConfluenceRESTClient():
         #       of a page (no sub-pages, attachments, etc)
         return 'history,space,version,body.storage,ancestors'
 
+    # TODO: move to copier command class
     # TODO: move this methods to somewhere else? make a spec class for
     #       ConfluenceAPI calls and extend for specific operations (like
     #       get/create new content, copy src/dst, etc)?

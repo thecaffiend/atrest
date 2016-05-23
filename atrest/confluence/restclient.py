@@ -7,12 +7,12 @@ from PythonConfluenceAPI import (
     all_of,
 )
 
-from AtREST.clientbase import (
+from atrest.core.clientbase import (
     ClientRunMode,
     AtRESTClientBase,
 )
 
-from AtREST.utils.decorators import (
+from atrest.utils.decorators import (
     debug_log_call,
     logs_httperror,
 )

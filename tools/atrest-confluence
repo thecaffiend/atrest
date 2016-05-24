@@ -1,0 +1,19 @@
+#!/usr/bin/env python
+
+# TODO: FIXME by making atrest pip installed!
+# ghetto addition of the parent dir path for finding AtREST. Only works from
+# the tools directory for now...
+import sys
+sys.path.append('..')
+
+from atrest.confluence.restclient import ConfluenceRESTClient
+
+# TODO: make a base class method to override for this purpose
+def main(argv=None):
+    app = ConfluenceRESTClient()
+    app.initialize(argv)
+    app.start()
+
+
+if __name__ == "__main__":
+    main()

@@ -7,6 +7,10 @@
    application base (subclass of traitlets.config.Application that provides
    functionality for InteractiveApplication - an application that runs via a
    cli menu or otherwise interactively).
+* make base class for all cli's. it should take have an application trait, and
+  the default cli should provide a menu that allows calling the various print
+  functions of the Application class
+* get module `__init__.py` files right for * imports (e.g. define `__all__`)
 * confluence rest client
  * add create_new_xxx methods (content, labels, attachments, etc)
  * move `_get_content_title` from atrest to this. rename and make public api

@@ -1,5 +1,5 @@
 from traitlets import (
-    Integer,
+    Integer, default
 )
 
 from PythonConfluenceAPI import (
@@ -16,6 +16,8 @@ from atrest.utils.decorators import (
     debug_log_call,
     logs_httperror,
 )
+
+# TODO: Extra aliases or flags?
 
 # max results for a query. this is a biggish number that doesn't cause
 # Confluence to bug out (2**32 does for sure).
@@ -37,10 +39,10 @@ class ConfluenceRESTClient(AtRESTClientBase):
         """
         Init method for class. Calls the base class's constructor.
         """
+        super().__init__(*args, **kwargs)
         self._api = None
-        super(ConfluenceRESTClient, self).__init__(*args, **kwargs)
 
-    def initialize_api(self, username, password, api_url_base, mode=None, *args, **kwargs):
+    def _initialize_api(self, password, *args, **kwargs):
         """
         Method to initialize the REST API. Override of base class method.
 
@@ -48,11 +50,6 @@ class ConfluenceRESTClient(AtRESTClientBase):
               in place of the password argument (and in a command line or
               Jupyter notebook setting) the user will be prompted for one.
         """
-        if mode:
-            self.mode = mode
-        self.username = username
-        self.api_url_base = api_url_base
-
         self._api = ConfluenceAPI(self.username, password, self.api_url_base)
 
     # TODO: operations to add/change
@@ -269,3 +266,28 @@ class ConfluenceRESTClient(AtRESTClientBase):
             res = self._api.get_content_labels(**kw)['results']
 
         return [lab for lab in res]
+
+    def _start_normal(self):
+        """
+        """
+        self.log.info('Self %s is going to start in normal mode', self)
+
+    def _start_interactive(self):
+        """
+        """
+        self.log.info('Self %s is going to start in interactive mode', self)
+
+# In case we'e run as a stand alone command. which we will for testing...
+# TODO: make a base class method to override for this purpose
+# TODO: doesn't work as is. it'll require importing much of atrest to
+#       do so. (i.e. running this file requires importing much of atrest
+#       for base classes and such.)
+# def main(argv=None):
+#     # mode=ClientRunMode.allowed_enum_value can be specified in the constructor
+#     app = ConfluenceRESTClient()
+#     app.initialize(argv)
+#     app.start()
+#
+#
+# if __name__ == "__main__":
+#     main()

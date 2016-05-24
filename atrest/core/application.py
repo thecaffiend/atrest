@@ -2,20 +2,20 @@ import logging
 
 from traitlets.config.application import Application
 from traitlets import (
-    Unicode, List, Dict, Bool,
+    Unicode, List, Dict, Bool, 
 )
 
 from atrest import __version__ as atrest_version
 
 base_aliases = {
-    'log-level' : 'AtRESTApplicationBase.log_level',
+    'log-level' : 'Application.log_level',
     'config' : 'AtRESTApplicationBase.config_file',
 }
 
 base_flags = dict(
-    debug = ({'AtRESTApplicationBase' : {'log_level' : logging.DEBUG}},
+    debug = ({'Application' : {'log_level' : logging.DEBUG}},
             "set log level to logging.DEBUG (most output)"),
-    quiet = ({'AtRESTApplicationBase' : {'log_level' : logging.CRITICAL}},
+    quiet = ({'Application' : {'log_level' : logging.CRITICAL}},
             "set log level to logging.CRITICAL (least output)"),
 )
 
@@ -50,9 +50,12 @@ class AtRESTApplicationBase(Application):
     TODO: Add examples.
     """
 
-    classes = List()
+    # any subclass that has configurables used by it should expose those class
+    # names to this list in the subclass so the command line options of the
+    # subclasses are available
+    classes = List([])
     config_file = Unicode(u'',
-                   help="Load a config file").tag(config=True)
+                   help="Specify a config file to load").tag(config=True)
 
     aliases = Dict(base_aliases)
 
@@ -96,9 +99,6 @@ class AtRESTCLIApplication(AtRESTApplicationBase):
     interactive = Bool(False,
                    help="Run via CLI (interactive)?").tag(config=True)
 
-#    aliases.update({'interactive' : 'AtRESTCLIApplication.interactive',})
-
-
     def __init__(self, **kwargs):
         """
         """
@@ -137,10 +137,16 @@ class AtRESTCLIApplication(AtRESTApplicationBase):
         else:
             self._start_normal()
 
-# TODO: Shouldn't need this in the base class, but do in sub-command apps and
-#       in the clients
+# TODO: make a method for this purpose. only override if allowing standalone
+#       run of application
+# Any application that can be run by itself should define these things (sub
+# the application class name for AtRESTApplicationBase and modify the function
+# as needed for the app). If it's only needed for testing the app, be sure to
+# remove it so it can't be run by itself later
+#
 # def main():
 #     app = AtRESTApplicationBase()
+#     # DO MORE THINGS AS NEEDED.
 #     app.initialize()
 #     app.start()
 #

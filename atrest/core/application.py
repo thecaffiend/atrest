@@ -2,7 +2,7 @@ import logging
 
 from traitlets.config.application import Application
 from traitlets import (
-    Unicode, List, Dict, Bool, 
+    Unicode, List, Dict, Bool,
 )
 
 from atrest import __version__ as atrest_version
@@ -129,7 +129,7 @@ class AtRESTCLIApplication(AtRESTApplicationBase):
         to be run interactively or not and goes from there.
         """
         self.log.debug(
-            'Starting AtRESTCLIApplication app in interactive mode: ',
+            'Starting AtRESTCLIApplication app in interactive mode: %s',
             self.interactive
         )
         if self.interactive:

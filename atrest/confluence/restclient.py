@@ -277,6 +277,7 @@ class ConfluenceRESTClient(AtRESTClientBase):
         """
         self.log.info('Self %s is going to start in interactive mode', self)
 
+# NOTE: For now there is a script (atrest-confluence) in tools to test this
 # In case we'e run as a stand alone command. which we will for testing...
 # TODO: make a base class method to override for this purpose
 # TODO: doesn't work as is. it'll require importing much of atrest to

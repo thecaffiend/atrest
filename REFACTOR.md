@@ -1,6 +1,7 @@
 # Refactoring AtREST
 
 ## LEFTOFF
+* Trying to get the space lister app working
 * Client base class implemented, and confluence client has been refactored.
  * Testing needed
  * consider something like AtREST.core for clientbase.py and a module for
@@ -17,13 +18,17 @@
 * each client should be an interactive app, and should be able to load commands
   as subcommands (e.g. Token for jupyterhub) or as commands available through
   it's cli.
+ * scripts for running each app should be added to the tools directory for now
 * make examples dir and add an example Application for SpaceLister
-* rename AtREST dir atrest (caps suck)
+* make pip installable (skeleton made in ignore/cookiecutter_tmp/pydefault_skel/atrest)
 * add scripts dir, and script for (at least) atrest app and atrest -i
   (interactive) alias. python scripts that have no .py extension (again, look
   at jupyterhub). may just rename tools for that
 * update README and other doc for updates
-* use skeleton (cookiecutter?) to make pip installable/doc skeletons
+* use skeleton (cookiecutter?) to make pip installable/doc command skeletons
+  for each API
+ * skeleton for atrest itself at: ignore/cookiecutter_tmp/pydefault_skel/atrest
+ * make a recipe for commands for each API, use that to make command skeletons
 * previous atrest.py is still around.
  * move contents that are command specific to command classes
  * atrest.py will become the traitlets application location when that starts

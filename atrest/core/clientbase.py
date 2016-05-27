@@ -1,5 +1,5 @@
-import enum
 import getpass
+import sys
 
 from traitlets.config.configurable import Configurable
 from traitlets import (
@@ -7,21 +7,14 @@ from traitlets import (
 )
 
 from atrest.core.application import (
+    AppRunMode,
     AtRESTCLIApplication,
 )
-
-class ClientRunMode(enum.Enum):
-    """
-    Enum for the mode to operate in. dry_run only logs what would happen.
-    real_run does it for realz...
-    """
-    dry_run = 0
-    real_run = 1
 
 # TODO: extra aliases or flags?
 rc_extra_aliases = {
     'username' : 'AtRESTClientBase.username',
-    'api-url-base' : 'AtRESTClientBase.api_url_base',
+    'apiurlbase' : 'AtRESTClientBase.api_url_base',
 }
 
 # rc_extra_flags = dict(
@@ -35,26 +28,19 @@ class AtRESTClientBase(AtRESTCLIApplication):
     """
     Base class for all Atlassian REST API Clients.
     """
-    mode = TraitletEnum(ClientRunMode,
-        default_value=ClientRunMode.dry_run,
-        help='the run mode of the client'
-    ).tag(config=True)
-
     username = Unicode(help='The username for API auth.').tag(config=True)
 
     @default('username')
     def _username_default(self):
         """
         """
-        un = None
-        if self.interactive:
-            un = input('Please enter username: ')
-        else:
-            # TODO: has this had a chance to config yet (from file or cmd line
-            #       args)? If so, this is ok to return None, as it will cause
-            #      a trait error.
-            self.log.error('No username specified for REST Client')
-        return un
+        return input('Please enter username: ')
+        # un = ''
+        # if self.interactive:
+        #     un = input('Please enter username: ')
+        # else:
+        #     self.log.error('No username specified for REST Client')
+        # return un
 
     # TODO: for now, the server address is just a unicode string. look into
     #       finding/making traitlets for real server values (urls, ports,
@@ -68,15 +54,14 @@ class AtRESTClientBase(AtRESTCLIApplication):
     def _api_url_base_default(self):
         """
         """
-        baseurl = None
-        if self.interactive:
-            baseurl = input('Please enter the base URL for the API: ')
-        else:
-            # TODO: has this had a chance to config yet (from file or cmd line
-            #       args)? If so, this is ok to return None, as it will cause
-            #      a trait error.
-            self.log.error('No API URL specified for REST Client')
-        return baseurl
+        return input('Please enter the base URL for the API: ')
+
+        # baseurl = ''
+        # if self.interactive:
+        #    baseurl = input('Please enter the base URL for the API: ')
+        # else:
+        #     self.log.error('No API URL specified for REST Client')
+        # return baseurl
 
     # TODO: We don't want it configurable, but being able to specify a trait
     #       like `__api = Type(SomeAPIBase, help="the api object to use")`
@@ -89,9 +74,6 @@ class AtRESTClientBase(AtRESTCLIApplication):
         """
         self.update_aliases(rc_extra_aliases)
 
-        m = kwargs.pop('mode', None)
-        if m:
-            self.mode = m
         super().__init__(*args, **kwargs)
 
         self._api = None
@@ -116,21 +98,19 @@ class AtRESTClientBase(AtRESTCLIApplication):
 
     def initialize(self, *args, **kwargs):
         """
-        Initialize the client. Assumes username and api_url_base have been set
+        Initialize the client.
         """
-        # TODO: do we need to parse command line in all applications?
-        # self.parse_command_line
-        super().initialize(*args, **kwargs)
-        pw = self._get_password()
-        if not pw:
-            # can't connect the client without a password.
-            self.log.error('Could not get password for the REST client. Exiting')
-            # TODO: is this too harsh? easier way to handle?
-            system.exit(-1)
+        # LEFTOFF
+        # NOTE: To get subapps and such, parse_command_line must be done
+        self.parse_command_line(argv=kwargs.get('argv', None))
 
-        self._initialize_api(pw)
+        if self.subapp:
+        # starting a subapp, no need to init
+            return
 
-    def _initialize_api(self, password):
+#        self.initialize_api()
+
+    def initialize_api(self, username=None, apiurlbase=None):
         """
         Method to initialize the REST API. All subclasses should implement this
         method, and it is assumed they will all require a username, password,
@@ -141,9 +121,36 @@ class AtRESTClientBase(AtRESTCLIApplication):
         #       more secure.
         raise NotImplementedError
 
-    def _get_password(self):
+    def get_password(self):
         """
         Prompt the user for a password.
         """
         # TODO: will this work in interactive and non interactive modes?
         return getpass.getpass('Please enter password for REST API: ')
+
+    def start(self):
+        """
+        """
+        """
+        Override of Application start method. By default, just checks if we are
+        to be run interactively or not and goes from there.
+        """
+        self.log.debug(
+            'Starting AtRESTClientBase app in interactive mode: %s',
+            self.interactive
+        )
+
+        if self.subapp:
+            # TODO: doing a hasattr check feels wrong here. shouldn't require
+            #       all subapps to necessarily have a reference to the API
+            #       client though. better way?
+            if hasattr(self.subapp, 'apiclient'):
+                self.subapp.apiclient = self
+            self.subapp.start()
+            return
+
+        if self.interactive:
+            self._start_interactive()
+        else:
+#            self.initialize_api()
+            self._start_normal()

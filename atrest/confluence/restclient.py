@@ -1,5 +1,7 @@
+import sys
+
 from traitlets import (
-    Integer, default
+    Integer, List, default
 )
 
 from PythonConfluenceAPI import (
@@ -8,13 +10,16 @@ from PythonConfluenceAPI import (
 )
 
 from atrest.core.clientbase import (
-    ClientRunMode,
     AtRESTClientBase,
 )
 
 from atrest.utils.decorators import (
     debug_log_call,
     logs_httperror,
+)
+
+from atrest.confluence.operation import (
+    SpaceLister,
 )
 
 # TODO: Extra aliases or flags?
@@ -30,11 +35,19 @@ class ConfluenceRESTClient(AtRESTClientBase):
     common operations.
     """
 
+    # LEFTOFF - see application.py for base class method.
+    # TODO: is this configurable? regardless, there needs to be a way to add
+    #       them at init, like via plugin dir or configurable list.
+    subcommands = {
+        'spaces': (SpaceLister, "List spaces available to a user")
+    }
+
+    classes = List([SpaceLister])
+
     limit = Integer(MAX_RESULTS, min=1, max=MAX_RESULTS,
                     help='max number of results returned for queries'
             ).tag(config=True)
 
-    # TODO: Once tested, the mode should default to real_run.
     def __init__(self, *args, **kwargs):
         """
         Init method for class. Calls the base class's constructor.
@@ -42,7 +55,15 @@ class ConfluenceRESTClient(AtRESTClientBase):
         super().__init__(*args, **kwargs)
         self._api = None
 
-    def _initialize_api(self, password, *args, **kwargs):
+
+    def initialize(self, *args, **kwargs):
+        """
+        """
+        self.parse_command_line(argv=kwargs.get('argv', None))
+# #        super().initialize(*args, **kwargs)
+#         pass
+
+    def initialize_api(self, username=None, apiurlbase=None):
         """
         Method to initialize the REST API. Override of base class method.
 
@@ -50,7 +71,32 @@ class ConfluenceRESTClient(AtRESTClientBase):
               in place of the password argument (and in a command line or
               Jupyter notebook setting) the user will be prompted for one.
         """
-        self._api = ConfluenceAPI(self.username, password, self.api_url_base)
+        if username:
+            self.username = username
+        else:
+            if not self.username:
+                self.log.error('Username not configured for API client')
+#            sys.exit(-1)
+                return False
+
+        if apiurlbase:
+            self.api_url_base = apiurlbase
+        else:
+            if not self.api_url_base:
+                self.log.error('REST API URL base not configured for API client')
+#            sys.exit(-1)
+                return False
+
+        pw = self.get_password()
+        if not pw:
+            # can't connect the client without a password.
+            self.log.error('Could not get password for API client')
+            # TODO: is this too harsh? easier way to handle?
+#            sys.exit(-1)
+            return False
+
+        self._api = ConfluenceAPI(self.username, pw, self.api_url_base)
+        return True
 
     # TODO: operations to add/change
     #   content_exists -> get_content
@@ -217,6 +263,74 @@ class ConfluenceRESTClient(AtRESTClientBase):
 
         return [attach for attach in res]
 
+    @logs_httperror
+    @debug_log_call()
+    def add_or_update_attachment(self, content_id, fake_arg):
+        """
+        """
+        pass
+
+    @logs_httperror
+    @debug_log_call()
+    def download_attachment(self, title, dl_dir, space_key=None):
+        """
+        Try to find and download an attachment specified by title in
+        space space_key to the directory dl_dir. Returns a downloaded file
+        path on success and None for failure.
+        """
+        kw = {
+            'content_type': 'attachment',
+            'space_key': space_key,
+            'title': title,
+        }
+
+        res = self.get_content(**kw)
+
+        if not res:
+            self.log.error('Could not download attachment %s', title)
+            return None
+        elif not len(res):
+            self.log.warn('No attachment found called %s', title)
+            return None
+        elif len(res) > 1:
+            self.log.warn('Too many attachments found called %s. Try expanding your filtering', title)
+            return None
+
+        return self.download_attachment_by_id(res[0]['id'], dl_dir)
+
+    @logs_httperror
+    @debug_log_call()
+    def download_attachment_by_id(self, attach_id, dl_dir):
+        """
+        Download an attachment specified by attach_id to the directory dl_dir.
+        Returns a downloaded file path on success and None for failure.
+        """
+        attach_res = self.get_content_by_id(attach_id)
+
+        if not attach_res:
+            self.log.error('Could not download attachment with id %s', attach_id)
+            return None
+
+        title = attach_res.get('title', None)
+        self.log.debug('Downloading attachment %s to dir %s', title, dl_dir)
+
+        # use the download link minus the preceeding '/'
+        l = attach_res['_links']['download'][1:]
+        p = os.path.join(dl_dir, title)
+        return self._download_by_link(l, p)
+
+    @logs_httperror
+    @debug_log_call()
+    def _download_by_link(self, dl_link, dl_path, raw=True):
+        """
+        """
+        cntnt = self.__api._service_get_request(sub_uri=dl_link, raw=raw)
+
+        with open(dl_path, 'wb') as f:
+            f.write(cntnt)
+
+        self.log.debug('Download of %s completed', dl_path)
+        return dl_path
 
     @logs_httperror
     @debug_log_call()
@@ -267,28 +381,21 @@ class ConfluenceRESTClient(AtRESTClientBase):
 
         return [lab for lab in res]
 
-    def _start_normal(self):
-        """
-        """
-        self.log.info('Self %s is going to start in normal mode', self)
+    # def start(self):
+    #     super().start()
 
-    def _start_interactive(self):
-        """
-        """
-        self.log.info('Self %s is going to start in interactive mode', self)
+    # def _start_normal(self):
+    #     """
+    #     """
+    #     self.log.info('Self %s is going to start in normal mode', self)
+    #
+    # def _start_interactive(self):
+    #     """
+    #     """
+    #     self.log.info('Self %s is going to start in interactive mode', self)
 
-# NOTE: For now there is a script (atrest-confluence) in tools to test this
-# In case we'e run as a stand alone command. which we will for testing...
-# TODO: make a base class method to override for this purpose
-# TODO: doesn't work as is. it'll require importing much of atrest to
-#       do so. (i.e. running this file requires importing much of atrest
-#       for base classes and such.)
-# def main(argv=None):
-#     # mode=ClientRunMode.allowed_enum_value can be specified in the constructor
-#     app = ConfluenceRESTClient()
-#     app.initialize(argv)
-#     app.start()
-#
-#
-# if __name__ == "__main__":
-#     main()
+# TODO: this is hardcoded to test. this should be moved to a method (
+#       made part of _get_subcommands?) and needs to add this class
+#       to the classes list for each subcommand (so the cli args for
+#       this class can be processed when calling subcommands)
+SpaceLister.classes.append(ConfluenceRESTClient)

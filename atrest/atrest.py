@@ -636,7 +636,8 @@ class ConfluenceRESTClient():
                                 )
         return True
 
-    # TODO: make this part of public api
+# TODO: make this part of public api
+# MOVED
     @handles_httperror
     @debug_log_call()
     def _download_attachment(self, attach_content, dl_dir):

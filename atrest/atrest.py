@@ -789,7 +789,7 @@ class ConfluenceRESTClient():
             self.__api.create_new_label_by_content_id(content_id=dst_id, label_names=label_copies)
         # TODO: need to return anything of interest? standardize returns...
 
-    # TODO: move to copier command class
+# MOVED
     @debug_log_call()
     def _copy_page(self, src_content, dst_parent_id, dst_space_key, dst_title, expand=None):
         """

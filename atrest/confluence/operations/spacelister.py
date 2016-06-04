@@ -12,13 +12,15 @@ sl_extra_aliases = {
     'filter': 'SpaceLister.filter_str',
 }
 
+# TODO: fix to not need __init__ (don't rely on update_aliases/flags)
+
 class SpaceLister(AtRESTClientOperation):
     """
     Trivial implementation of a Confluence operation. This one just gets spaces
     from the REST API and prints them.
     """
 
-    name = 'atrest-list-spaces'
+    name = 'atrest-confluence-spaces'
 
     description = """Trivial implementation of a Confluence operation as an
     example. This operation prompts for username and API URL base (if not

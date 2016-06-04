@@ -4,7 +4,7 @@ import enum
 from traitlets.config.application import Application
 
 from traitlets import (
-    Unicode, List, Dict, Bool, Enum as TraitletEnum,
+    Unicode, Dict, Bool, Enum as TraitletEnum,
 )
 
 from atrest import __version__ as atrest_version
@@ -20,6 +20,7 @@ class AppRunMode(enum.Enum):
     dry_run = 0
     real_run = 1
 
+# Aliases and flags for all AtRESTApplicationBase decendants
 base_aliases = {
     'log-level' : 'Application.log_level',
     'config' : 'AtRESTApplicationBase.config_file',
@@ -32,36 +33,37 @@ base_flags = dict(
             "set log level to logging.CRITICAL (least output)"),
 )
 
-cli_extra_aliases = {
+cli_aliases = {
     'interactive' : 'AtRESTCLIApplication.interactive',
 }
+cli_aliases.update(base_aliases)
 
 # TODO: is there a way to specify both a single char and full flag name
 #       in a single element here (e.g. both i and interactive)? any
 #       problems specifying 2 flags for the same thing if not?
-cli_extra_flags = dict(
+cli_flags = dict(
     interactive = ({'AtRESTCLIApplication' : {'interactive' : True}},
         "set application mode to interactive"),
     i = ({'AtRESTCLIApplication' : {'interactive' : True}},
         "set application mode to interactive"),
 )
-
+cli_flags.update(base_flags)
 
 class AtRESTApplicationBase(Application):
     """
     Base class for AtREST applications.
     """
 
-    name = Unicode(u'atrestapplicationbase')
+    name = Unicode(u'atrest-base')
 
     version = atrest_version
 
-    description = """Start an AtREST Application.
-    TODO: Add more description...
+    description = """Base class for AtREST Applications. Should not be used
+    as is, but should be subclassed.
     """
 
     examples = """
-    TODO: Add examples.
+    Base class has no examples.
     """
 
     config_file = Unicode(u'',
@@ -83,24 +85,31 @@ class AtRESTApplicationBase(Application):
     extra_cmd_dirs = Unicode(u'',
         help='directory to scan for subcommand files').tag(config=True)
 
-    def __init__(self, *args, **kwargs):
-        """
-        """
-        super().__init__(*args, **kwargs)
-        m = kwargs.pop('mode', None)
-        if m:
-            self.mode = m
+    # TODO: may be best to set mode explicitly instead of in __init__. Then the
+    #       __init__would really be unnecessary. So if this works, remove it
+    # def __init__(self, *args, **kwargs):
+    #     """
+    #     Base initializer. Set the mode if provided.
+    #     """
+    #     super().__init__(*args, **kwargs)
+    #     m = kwargs.pop('mode', None)
+    #     if m:
+    #         self.mode = m
 
+    # TODO: make @classmethod?
     def update_aliases(self, extra_aliases):
         """
+        Update the aliases dict with the provided extra_aliases
         """
         self.aliases.update(extra_aliases)
 
+    # TODO: make @classmethod?
     def update_flags(self, extra_flags):
         """
+        Update the flags dict with the provided extra_flags
         """
         self.flags.update(extra_flags)
-
+            
     @classmethod
     def _get_subcommands(cls):
         """
@@ -108,7 +117,9 @@ class AtRESTApplicationBase(Application):
         specified in the config, a dict in the config, and in the subcommands
         dict of the class itself.
         """
-
+        # TODO: in progress. finish later. should load all subcommands found
+        #       in the usual python script loactions, on the user's path, and
+        #       specified in subclasses
         subcommands = cls.subcommands
 
         # LEFTOFF
@@ -141,22 +152,31 @@ class AtRESTCLIApplication(AtRESTApplicationBase):
     name = 'atrest-cliapp'
 
     description = """Start an AtREST Application that can be run interactively.
-    TODO: Add more description...
+    This should not be used as is and should instead be subclassed
     """
 
     examples = """
-    TODO: Add examples.
+    Base class has no examples.
     """
+
+    aliases = Dict(cli_aliases)
+
+    flags = Dict(cli_flags)
 
     interactive = Bool(False,
                    help="Run via CLI (interactive)?").tag(config=True)
 
-    def __init__(self, **kwargs):
-        """
-        """
-        super().__init__(**kwargs)
-        self.update_aliases(cli_extra_aliases)
-        self.update_flags(cli_extra_flags)
+# TODO: remove if not needed
+    # TODO: find a way to update flags and aliases without an __init__ to
+    #       remove need to call super().__init__(). Once done, remove this.
+    #       see NewToken in juyterhub repo.
+#     def __init__(self, *args, **kwargs):
+#         """
+#         Initialize the instance. Update the aliases/flags
+#         """
+# #        super().__init__(**kwargs)
+#         self.update_aliases(cli_extra_aliases)
+#         self.update_flags(cli_extra_flags)
 
     def _start_interactive(self):
         """
@@ -170,6 +190,7 @@ class AtRESTCLIApplication(AtRESTApplicationBase):
         """
         raise NotImplementedError
 
+# TODO: remove if not needed
     # def start(self):
     #     """
     #     Override of Application start method. By default, just checks if we are
@@ -190,6 +211,7 @@ class AtRESTCLIApplication(AtRESTApplicationBase):
     #     else:
     #         self._start_normal()
 
+# TODO: make this doc accurate after getting the architecture down.
 
 # NOTE: Applications that will be runnable by themselves (not as sub apps to
 #       another app) need to hav a method to run them. An example of this

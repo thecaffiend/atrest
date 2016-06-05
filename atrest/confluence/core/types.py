@@ -1,158 +1,156 @@
 """
+Traitlets classes for wrapping various types returned from confluence REST API
+calls.
 """
 
 from traitlets import (
-    HasTraits, Instance, Unicode,
+    HasTraits, Dict, Instance, Unicode,
 )
+
+# TODO: break module this up in some way?
 
 class ConfluenceTypeBase(HasTraits):
     """
-    """
+    Base type for Confluence types. Defines methods usable by all subclasses
+    for converting to/from confluence REST representations.
 
+    Subclasses defining traits of their own should tag the traits with a
+    json_key if the trait name differs from what is used in the Confluence
+    json format.
+    """
     def from_conf_format(self, conf_frmt):
         """
+        Sets the values of the traits in the class to the ones from conf_frmt
+        where the keys in conf_frmt are the json_key's for the trait name.
         """
-        raise NotImplementedError
+        [
+            self.set_trait_pair(tn, conf_frmt.get(self.json_key(tn), None)) for
+                tn in self.trait_names()
+        ]
 
     def to_conf_format(self):
         """
+        Return a dict of json_keys for traits to values of the traits
+        themselves if the trait json_key and value are truthy.
         """
-        # TODO: for these methods, give each class below a string for the key
-        #       they should use for the conf_format (e.g. Links would have the
-        #       key '_links')
-        raise NotImplementedError
+        return {
+            k: v for k, v in [
+                self.get_trait_pair(tn) for tn in self.trait_names()
+            ] if k and v
+        }
 
-# TODO: move non-result classes (Links, Extensions, Expandable, etc) to another
-#       module? they are resultbase extensions though...
+    def get_trait_pair(self, trait_name):
+        """
+        Return a tuple of the json key for a trait name and the current value
+        of the trait. If the trait is not defined, a tuple of (None, None) is
+        returned
+        """
+        if self.has_trait(trait_name):
+            trt = getattr(self, trait_name)
+            return (
+                self.json_key(trait_name),
+                trt.to_conf_format() if hasattr(trt, 'to_conf_format') else trt
+            )
+
+        return (None, None)
+
+    def set_trait_pair(self, trait_name, val):
+        """
+        """
+        if self.has_trait(trait_name):
+            trt = getattr(self, trait_name)
+            trt.from_conf_format(val) if hasattr(
+                trt, 'from_conf_format') else setattr(self, trait_name, val)
+
+    def json_key(self, trait_name):
+        """
+        Returns the json_key for a trait. The trait should be tagged at
+        definition with the key. E.g.
+
+        trt = Unicode().tag(json_key='key_string')
+
+        If the trait has not been tagged in this manner, the trait_name will be
+        returned, thus the tagging is only necessary for traits with json keys
+        that differ from the trait's name (e.g. in the event that the json
+        key would be a reserved word in python and the trait name must be
+        changed as a result).
+        """
+        return self.trait_metadata(trait_name, 'json_key') or trait_name
 
 class Extensions(ConfluenceTypeBase):
     """
+    Represents a Confluence extensions value type
     """
-    position = Unicode('')
+    # TODO: either add all possible extension values here as traits (defaulting
+    #       to None) and only assign values to needed ones, or perhaps make
+    #       extensions (and other things that change per content type)
+    #       nested classes in the classes that use them?
+    position = Unicode(None, allow_none=True).tag(json_key='position')
 
-    def from_conf_format(self, conf_frmt):
-        """
-        """
-        self.position = conf_frmt['position']
-
-    def to_conf_format(self):
-        """
-        """
-        return {
-            'position': self.position
-        }
 
 class Links(ConfluenceTypeBase):
     """
+    Represents a Confluence _links value type
     """
-    webui = Unicode('')
-    tinyui = Unicode('')
-    self_link = Unicode('')
+    webui = Unicode(None, allow_none=True).tag(json_key='webui')
+    tinyui = Unicode(None, allow_none=True).tag(json_key='tinyui')
+    self_link = Unicode(None, allow_none=True).tag(json_key='self')
 
-    def from_conf_format(self, conf_frmt):
-        """
-        """
-        self.webui = conf_frmt['webui']
-        self.tinyui = conf_frmt['tinyui']
-        self.self_link = conf_frmt['self']
-
-    def to_conf_format(self):
-        """
-        """
-        return {
-            'webui': self.webui,
-            'tinyui': self.tinyui,
-            'self': self.self_link
-        }
 
 class Expandable(ConfluenceTypeBase):
     """
+    Represents a Confluence _expandable value type
     """
-    # TODO: make expandable base class. this can't be the list for everything.
-    #       too many things. perhaps each gets a Set of allowed values?
-    container = Unicode('')
-    metadata = Unicode('')
-    operations = Unicode('')
-    children = Unicode('')
-    history = Unicode('')
-    ancestors = Unicode('')
-    body = Unicode('')
-    version = Unicode('')
-    descendants = Unicode('')
-    space = Unicode('')
+    # TODO: see todo in extensions. all possible or base class.
+    container = Unicode(None, allow_none=True).tag(json_key='container')
+    metadata = Unicode(None, allow_none=True).tag(json_key='metadata')
+    operations = Unicode(None, allow_none=True).tag(json_key='operations')
+    children = Unicode(None, allow_none=True).tag(json_key='children')
+    history = Unicode(None, allow_none=True).tag(json_key='history')
+    ancestors = Unicode(None, allow_none=True).tag(json_key='ancestors')
+    body = Unicode(None, allow_none=True).tag(json_key='body')
+    version = Unicode(None, allow_none=True).tag(json_key='version')
+    descendants = Unicode(None, allow_none=True).tag(json_key='descendants')
+    space = Unicode(None, allow_none=True).tag(json_key='space')
 
-    def from_conf_format(self, conf_frmt):
-        """
-        """
-        self.container = conf_frmt['container']
-        self.metadata = conf_frmt['metadata']
-        self.operations = conf_frmt['operations']
-        self.children = conf_frmt['children']
-        self.history = conf_frmt['history']
-        self.ancestors = conf_frmt['ancestors']
-        self.body = conf_frmt['body']
-        self.version = conf_frmt['version']
-        self.descendants = conf_frmt['descendants']
-        self.space = conf_frmt['space']
 
-    def to_conf_format(self):
-        """
-        """
-        return {
-            'container': self.container,
-            'metadata': self.metadata,
-            'operations': self.operations,
-            'children': self.children,
-            'history': self.history,
-            'ancestors': self.ancestors,
-            'body': self.body,
-            'version': self.version,
-            'descendants': self.descendants,
-            'space': self.space
-        }
+class DescriptionRepresentation(ConfluenceTypeBase):
+    """
+    Represents a Confluence description representation value type.
+    """
+    value = Unicode(None, allow_none=True).tag(json_key='value')
+    representation = Unicode(None, allow_none=True).tag(json_key='representation')
+
+class Description(ConfluenceTypeBase):
+    """
+    Represents a Confluence description value type. 
+    """
+    representation = Instance(klass=DescriptionRepresentation, kw={}).tag(json_key='plain')
+
+
+class Space(ConfluenceTypeBase):
+    """
+    Represents a Confluence space value type. This type would be returned from
+    a call to PythonConfluenceAPI.get_space_information for example.
+    """
+    conf_id = Unicode(None, allow_none=True).tag(json_key='id')
+    space_key = Unicode(None, allow_none=True).tag(json_key='key')
+    name = Unicode(None, allow_none=True).tag(json_key='name')
+    links = Instance(klass=Links, kw={}).tag(json_key='_links')
+    description = Instance(klass=Description, kw={}).tag(json_key='description')
 
 class Content(ConfluenceTypeBase):
+    """
+    Represents a Confluence content value type. There are a couple of different
+    content types (e.g. 'page' and 'blogpost') available.
+    """
     CONTENT_TYPES = {'page', 'blogpost', 'comment', 'attachment'}
     CONTENT_STATUS = {'current',}
 
-    # TODO: traits: Links, Expandable
-
-    # LEFTOFF - will Nones hurt here?
-    conf_id = Unicode('')
-    content_type = Unicode('')
-    status = Unicode('')
-    title = Unicode('')
-    extensions = Instance(klass=Extensions)
-    links = Instance(klass=Links)
-    expandable = Instance(klass=Expandable)
-
-    def __init__(self, result=None):
-        """
-        """
-        self.extensions = Extensions()
-        self.links = Links()
-        self.expandable = Expandable()
-
-    def from_conf_format(self, conf_frmt):
-        """
-        """
-        self.conf_id = conf_frmt['id']
-        self.content_type = conf_frmt['type']
-        self.status = conf_frmt['status']
-        self.title  = conf_frmt['title']
-        self.extensions.from_conf_format(conf_frmt['extensions'])
-        self.links.from_conf_format(conf_frmt['_links'])
-        self.expandable.from_conf_format(conf_frmt['_expandable'])
-
-    def to_conf_format(self):
-        """
-        """
-        return {
-            'id': self.conf_id,
-            'type': self.content_type,
-            'status': self.status,
-            'title': self.title,
-            'extensions': self.extensions.to_conf_format(),
-            '_links': self.links.to_conf_format(),
-            '_expandable': self.expandable.to_conf_format()
-        }
+    conf_id = Unicode(None, allow_none=True).tag(json_key='id')
+    content_type = Unicode(None, allow_none=True).tag(json_key='type')
+    status = Unicode(None, allow_none=True).tag(json_key='status')
+    title = Unicode(None, allow_none=True).tag(json_key='title')
+    extensions = Instance(klass=Extensions, kw={}).tag(json_key='extensions')
+    links = Instance(klass=Links, kw={}).tag(json_key='_links')
+    expandable = Instance(klass=Expandable, kw={}).tag(json_key='_expandable')

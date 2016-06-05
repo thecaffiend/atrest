@@ -1,7 +1,7 @@
-__all__ = ['ResultList', 'Content', 'Links', 'Extensions', 'Expandable']
+__all__ = ['ResultList', 'Content', 'Space', 'Links', 'Extensions', 'Expandable']
 
 from .types import (
-    Links, Extensions, Expandable, Content,
+    Links, Extensions, Expandable, Content, Space
 )
 from .resultlist import (
     ResultList,

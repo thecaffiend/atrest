@@ -6,6 +6,11 @@ gotchas, limitations and the like.
 ## General
 General notes taken during usage.
 
+* response values
+ * sometimes id's are numbers, and sometimes strings. looks like PCA returns
+   strings for them always and the json responses from CRA is usually a number.
+   Since some id's are not representable as numeric as returned (e.g.
+   attachments have id's like att36349126), strings seem the best way to go.
 * Limiting results - without being told otherwise, CRA will return 25 results
   max per query (paginate results).
  * This is ok if it's the desired result. It can be cumbersome to get results,

@@ -11,12 +11,18 @@
 * need page deleter asap
 * Tests (do immediately...integration is getting hard):
  * Whole of base classes
- * rest client
- * operations
+ * Confluence
+  * rest client
+  * operations
+  * core classes
  * look at traitlets and jupyterhub tests. also pythoscope and other test
    generators (python unittest compatable). mock as well (with unittest in
    python core lib)
 * confluence/core module items
+ * make some restclient transition methods to support using the new
+   confluence/core classes for new things (like the much needed page deleter)
+   but to keep previous applications (like space lister/page copier) working
+   in the interim. do those changes on their own branch.
  * remove need for decorator that builds the kw dict for each api wrapper call
    for confluence. use the new classes for the dict creation
  * the new classes should provide methods for making copies of themselves for

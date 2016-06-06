@@ -4,11 +4,26 @@ calls.
 """
 
 from traitlets import (
-    HasTraits, Dict, Instance, Unicode,
+    HasTraits, Integer, Instance, Unicode,
 )
+
 
 # TODO: break module this up in some way?
 
+# TODO: How to handle expansion? e.g. if a page is requested and ancestors is
+#       expanded, there will be an epand entry for it in the request, and the
+#       response will have a list for ancestors in the content result, but
+#       there is no indication in the response that it was expeanded (other
+#       than the list being there and ancestors not existing in the result's
+#       _expandable), so we wouldn't know to look for it out of the box. some
+#       of the expandables will be lists of existing types (like ancestors
+#       would be a list of content types), but some will be types not
+#       implemented yet (like body.storage).
+
+# TODO: Methods to return a representation suitable for creating new content
+
+# TODO: Add classes:
+#           * expandables
 class ConfluenceTypeBase(HasTraits):
     """
     Base type for Confluence types. Defines methods usable by all subclasses
@@ -85,16 +100,32 @@ class Extensions(ConfluenceTypeBase):
     #       to None) and only assign values to needed ones, or perhaps make
     #       extensions (and other things that change per content type)
     #       nested classes in the classes that use them?
+
+    # from pages
     position = Unicode(None, allow_none=True).tag(json_key='position')
+
+    # from attachments
+    media_type = Unicode(None, allow_none=True).tag(json_key='mediaType')
+    files_size = Integer(None, allow_none=True).tag(json_key='fileSize')
+    comment = Unicode(None, allow_none=True).tag(json_key='comment')
 
 
 class Links(ConfluenceTypeBase):
     """
     Represents a Confluence _links value type
     """
+
+    # from pages
     webui = Unicode(None, allow_none=True).tag(json_key='webui')
     tinyui = Unicode(None, allow_none=True).tag(json_key='tinyui')
     self_link = Unicode(None, allow_none=True).tag(json_key='self')
+
+    # from attachments
+    download = Unicode(None, allow_none=True).tag(json_key='download')
+
+    # from results lists (TODO: should this be here? RL is in another file)
+    base = Unicode(None, allow_none=True).tag(json_key='base')
+    context = Unicode(None, allow_none=True).tag(json_key='context')
 
 
 class Expandable(ConfluenceTypeBase):
@@ -123,7 +154,7 @@ class DescriptionRepresentation(ConfluenceTypeBase):
 
 class Description(ConfluenceTypeBase):
     """
-    Represents a Confluence description value type. 
+    Represents a Confluence description value type.
     """
     representation = Instance(klass=DescriptionRepresentation, kw={}).tag(json_key='plain')
 
@@ -154,3 +185,15 @@ class Content(ConfluenceTypeBase):
     extensions = Instance(klass=Extensions, kw={}).tag(json_key='extensions')
     links = Instance(klass=Links, kw={}).tag(json_key='_links')
     expandable = Instance(klass=Expandable, kw={}).tag(json_key='_expandable')
+
+
+class Metadata(ConfluenceTypeBase):
+    """
+    Represents a Confluence metadata value type. These are found in attachment
+    results as an example.
+    """
+    # from attachments
+    media_type = Unicode(None, allow_none=True).tag(json_key='mediaType')
+    comment = Unicode(None, allow_none=True).tag(json_key='comment')
+
+# LEFTOFF

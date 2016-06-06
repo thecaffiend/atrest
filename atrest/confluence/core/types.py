@@ -22,8 +22,11 @@ from traitlets import (
 
 # TODO: Methods to return a representation suitable for creating new content
 
+# TODO: Methods/properties for the fields of most interest to clients (like
+#       for setting the description on a space)
+
 # TODO: Add classes:
-#           * expandables
+#           * expandables (for definiting what is/was expanded for api call)
 class ConfluenceTypeBase(HasTraits):
     """
     Base type for Confluence types. Defines methods usable by all subclasses
